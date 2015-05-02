@@ -4,7 +4,11 @@
 using namespace std;
 
 int main() {
-	cout << eval::eval("5*3-4") << endl;
+	if (eval::compare("5 = 5")) {
+		cout << "True" << endl;
+	} else {
+		cout << "False" << endl;
+	}
 
 	return 0;
 }

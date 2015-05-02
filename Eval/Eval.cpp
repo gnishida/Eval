@@ -1,7 +1,9 @@
 ﻿#include "Eval.h"
 #include <stack>
 #include <boost/spirit.hpp>
+#include <iostream>
 
+using namespace std;
 using namespace boost::spirit;
 
 namespace eval {
@@ -69,37 +71,80 @@ void POW(const char* const, const char* const)
 	push(pow(b,a));
 }
 
+void GREATER(const char* const, const char* const) {
+	double a = pop();
+	double b = pop();
+	push(b > a ? 1.0 : 0.0);
+}
+
+void LESS(const char* const, const char* const) {
+	double a = pop();
+	double b = pop();
+	push(b < a ? 1.0 : 0.0);
+}
+
+void EQUAL(const char* const, const char* const) {
+	double a = pop();
+	double b = pop();
+	push(b == a ? 1.0 : 0.0);
+}
+
+void GREATER_EQUAL(const char* const, const char* const) {
+	double a = pop();
+	double b = pop();
+	push(b >= a ? 1.0 : 0.0);
+}
+
+void LESS_EQUAL(const char* const, const char* const) {
+	double a = pop();
+	double b = pop();
+	push(b <= a ? 1.0 : 0.0);
+}
+
+void NOT_EQUAL(const char* const, const char* const) {
+	double a = pop();
+	double b = pop();
+	push(b != a ? 1.0 : 0.0);
+}
+
 //-----------------------------------------------------------------------------
 //	文法
 //-----------------------------------------------------------------------------
-struct calculator : public grammar<calculator> {
+struct compare_grammar : public grammar<compare_grammar> {
 	template<typename S> struct definition {
-		rule<S> expression, term, factor, group;
+		rule<S> comparison, expression, term, factor, group, comparison_op;
 
-		definition(const calculator& self) {
+		definition(const compare_grammar& self) {
 			group		= '(' >> expression >> ')';
 			factor		= real_p[&PUSH] | group;
 			term		= factor >> *( ('*' >> factor)[&MUL] |
 				                       ('/' >> factor)[&DIV] |
 									   ('^' >> factor)[&POW]   );
 			expression	= term >> *( ('+' >> term)[&ADD] | ('-' >> term)[&SUB] );
+			comparison = expression >> ( ('>' >> expression[&GREATER]) |
+										 ('<' >> expression[&LESS]) |
+										 ('=' >> expression[&EQUAL]) |
+										 (">=" >> expression[&GREATER_EQUAL]) |
+										 ("<=" >> expression[&LESS_EQUAL]) |
+										 ("!=" >> expression[&NOT_EQUAL]) );
 		}
 
 		// 開始記号を定義
-		const rule<S>& start() const { return expression; }	
+		const rule<S>& start() const { return comparison; }	
 	};
 };
 
-double eval(string str) {
-	calculator calc;
+bool compare(string str) {
+	compare_grammar grammar;
 
 	// 入力された文字列をcalcに入力し、space_p(空白、タブ、改行)を抜いて解析
-	parse_info<> r = parse(str.c_str(), calc, space_p);
+	parse_info<> r = parse(str.c_str(), grammar, space_p);
 
 	if (r.full) {
-		return pop();
+		return pop() == 1.0 ? true : false;
 	} else {
-		return 999999;
+		cout << "error" << endl;
+		return false;
 	}
 }
 
